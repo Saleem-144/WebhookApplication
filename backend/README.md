@@ -2,6 +2,9 @@
 
 This is the Node.js / Express.js backend for the Dialpad Super Admin Dashboard. It is built using **JavaScript (ES Modules)** and integrates with PostgreSQL, Redis, and Socket.IO.
 
+## Project Overview
+This backend provides the foundational infrastructure for a real-time Dialpad management dashboard. It includes a secure JWT-based authentication system with role-based access control, a comprehensive user management API with automated email credential delivery, and a centralized audit logging service. The data layer is optimized for high-performance with a PostgreSQL connection pool and abstracted model helpers for offices, departments, and agents. Most importantly, it features a reactive real-time engine built on Socket.IO and Redis Pub/Sub, allowing the dashboard to instantly reflect incoming Dialpad events like new messages, call status changes, and agent presence updates even across multiple server instances.
+
 ## Technical Stack
 - **Runtime**: Node.js (ESM)
 - **Framework**: Express.js
