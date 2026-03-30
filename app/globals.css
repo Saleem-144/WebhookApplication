@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f9fc;
+  --foreground: #334155;
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #64748b;
+  --sidebar-active: #2563eb;
+  --sidebar-active-bg: #eff6ff;
+  --card-bg: #ffffff;
+  --card-border: transparent; /* matching screenshot */
+  --stat-card-bg: #eff6ff; /* light blue for stat icons */
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --text-primary: #334155;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --dept-heading: #1e40af; /* dark blue for dept titles */
+  --status-available: #22c55e;
+  --status-busy: #eab308;
+  --status-dnd: #ef4444;
+  --status-offline: #cbd5e1;
+  --navbar-bg: #ffffff;
+  --navbar-border: #f1f5f9;
+  --input-bg: #f8fafc;
+  --input-border: #e2e8f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-bg: var(--sidebar-active-bg);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-stat-card-bg: var(--stat-card-bg);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-dept-heading: var(--dept-heading);
+  --color-status-available: var(--status-available);
+  --color-status-busy: var(--status-busy);
+  --color-status-dnd: var(--status-dnd);
+  --color-status-offline: var(--status-offline);
+  --color-navbar-bg: var(--navbar-bg);
+  --color-navbar-border: var(--navbar-border);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4c8d0;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+}
+
+/* Smooth transitions on navigation */
+.nav-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Status dot pulse animation for available agents */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+.status-dot-available {
+  animation: pulse-green 2s infinite;
 }
