@@ -23,8 +23,8 @@ In Dialpad, when a customer sends a message to a department number, any agent in
 
 | Rule | Value |
 |------|-------|
-| **Language** | JavaScript ONLY — zero TypeScript anywhere |
-| **File extensions** | .js and .jsx only — never .ts or .tsx |
+| **Language** | TypeScript |
+| **File extensions** | .ts and .tsx |
 | **Frontend** | Next.js (App Router) + Shadcn/UI + Tailwind CSS |
 | **Backend** | Node.js + Express.js |
 | **Database** | PostgreSQL (hosted on Supabase) |
@@ -64,25 +64,25 @@ Company (one, registered under company admin Dialpad account)
 │   ├── 3_DBSchema.docx       ← All 13 tables with SQL, indexes, key queries
 │   └── 4_CursorRules.docx    ← Human-readable version of .cursorrules
 │
-├── /frontend                 ← Next.js app (JavaScript)
+├── /frontend                 ← Next.js app (TypeScript)
 │   ├── /app
 │   │   ├── /(auth)           ← Login, change-password pages
 │   │   └── /(dashboard)      ← home, messages, calls, settings pages
 │   ├── /components           ← Sidebar, Navbar, ChatThread, CallLog, AIPanel, etc.
-│   ├── /hooks                ← useSocket.js, useAuth.js, useOffice.js
+│   ├── /hooks                ← useSocket.ts, useAuth.ts, useOffice.ts
 │   ├── /lib                  ← API client (axios), socket client init
-│   ├── /store                ← Zustand: authStore.js, officeStore.js, notificationStore.js
+│   ├── /store                ← Zustand: authStore.ts, officeStore.ts, notificationStore.ts
 │   └── /styles               ← Global CSS, Tailwind config
 │
-└── /backend                  ← Node.js + Express app (JavaScript)
+└── /backend                  ← Node.js + Express app (TypeScript)
     └── /src
         ├── /webhooks         ← Webhook receiver route + signature verification
-        ├── /events           ← Event processors: sms.js, call.js, agent.js, contact.js
-        ├── /routes           ← REST API: auth.js, messages.js, calls.js, agents.js, ai.js
+        ├── /events           ← Event processors: sms.ts, call.ts, agent.ts, contact.ts
+        ├── /routes           ← REST API: auth.ts, messages.ts, calls.ts, agents.ts, ai.ts
         ├── /db               ← PostgreSQL pool + query helpers
         ├── /socket           ← Socket.IO server setup and emitters
         ├── /middleware        ← JWT auth, role check, rate limiter, error handler
-        ├── /services         ← email.js, ai.js, dialpad-api.js
+        ├── /services         ← email.ts, ai.ts, dialpad-api.ts
         └── /config           ← Env config loader, constants
 ```
 
@@ -265,7 +265,7 @@ NODE_ENV=development
 
 ## Important Notes for Cursor AI
 
-- **JavaScript only** — if you generate `.ts` or `.tsx` files, that is a mistake. Stop and regenerate as `.js` / `.jsx`
+- **TypeScript** — write scalable, type-safe TypeScript code using `.ts` and `.tsx` file extensions.
 - **No `require()`** — use ES module `import/export` syntax throughout
 - **No inline SQL in routes** — all queries go through `/db/` helper files
 - **No business logic in routes** — routes call services, services do the work
