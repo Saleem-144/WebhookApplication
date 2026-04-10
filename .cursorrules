@@ -5,7 +5,7 @@ Section 1 — Language & Framework Rules
 
 
 ## FRONTEND FRAMEWORK
-- Framework: Next.js with App Router.
+- Framework: Next.js with App Router (TypeScript).
 - All pages use the /app directory structure.
 - Use "use client" directive only when hooks or browser APIs are needed.
 - Prefer server components for data fetching where possible.
@@ -14,7 +14,7 @@ Section 1 — Language & Framework Rules
 - Never use styled-components or Emotion.
 
 ## BACKEND FRAMEWORK
-- Framework: Node.js with Express.js (JavaScript).
+- Framework: Node.js with Express.js (TypeScript).
 - Never use Fastify, Hapi, or NestJS.
 - All routes organized in /src/routes/ with one file per domain.
 - All business logic in /src/services/ — routes must not contain logic.
@@ -38,10 +38,10 @@ Section 2 — Code Style Rules
 
 ## NAMING CONVENTIONS
 - React components: PascalCase (e.g., ChatThread, AgentList)
-- Files for components: PascalCase (e.g., ChatThread.jsx)
-- All other files: camelCase (e.g., authMiddleware.js, messageService.js)
+- Files for components: PascalCase (e.g., ChatThread.tsx)
+- All other files: camelCase (e.g., authMiddleware.ts, messageService.ts)
 - Database columns: snake_case (e.g., created_at, agent_id)
-- JavaScript variables: camelCase (e.g., agentId, threadData)
+- TypeScript variables: camelCase (e.g., agentId, threadData)
 - Constants: SCREAMING_SNAKE_CASE (e.g., JWT_EXPIRES_IN)
 - CSS classes: Tailwind utility classes only
 
@@ -69,7 +69,7 @@ Section 4 — Authentication & Security Rules
 - Password hashing using bcrypt with salt rounds of 12.
 - JWT tokens expire in 8 hours (JWT_EXPIRES_IN=8h).
 - JWT secret loaded from environment variable JWT_SECRET.
-- All protected routes use the authMiddleware from /middleware/auth.js.
+- All protected routes use the authMiddleware from /middleware/auth.ts.
 - Role checks done at route level using roleMiddleware.
 - Never return password_hash in any API response.
 - Never log passwords, tokens, or webhook secrets.
@@ -120,7 +120,7 @@ Section 6 — Real-Time & State Rules
 
 ## FRONTEND STATE
 - Use Zustand for global state management.
-- Stores: authStore.js, officeStore.js, notificationStore.js
+- Stores: authStore.ts, officeStore.ts, notificationStore.ts
 - Use React Query (TanStack Query) for server state and API calls.
 - Never store sensitive data (tokens) in localStorage — use httpOnly cookies.
 - Optimistic UI for outbound messages: show immediately, confirm on socket event.
@@ -132,7 +132,7 @@ Section 7 — AI Integration Rules
 - Max tokens per request: 1500
 - Always include a system prompt that sets context as a communication analyst.
 - Conversation history passed as user message formatted clearly.
-- Premade prompts handled as templates in /src/services/ai.js.
+- Premade prompts handled as templates in /src/services/ai.ts.
 - Custom user queries passed through after basic sanitization.
 - Never send PII to AI beyond what is already in the message content.
 - Rate limit AI endpoints: 20 requests per user per hour.
