@@ -1,6 +1,5 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 import { query } from '../db/index.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 import { sendCredentials } from '../services/email.js';
@@ -8,14 +7,17 @@ import { logAction } from '../services/audit.js';
 
 const router = express.Router();
 
+const CREATABLE_BY_ADMIN = ['admin', 'agent'];
+const CREATABLE_BY_SUPERADMIN = ['superadmin', 'admin', 'agent'];
+
 /**
- * List all users
+ * List all users (superadmin and admin only)
  * GET /api/users
  */
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, restrictTo('superadmin', 'admin'), async (req, res) => {
   try {
     const result = await query(
-      'SELECT id, email, name, role, is_active, last_login_at, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, name, role, avatar_url, is_active, last_login_at, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({
       success: true,
@@ -28,10 +30,10 @@ router.get('/', protect, async (req, res) => {
 });
 
 /**
- * Create a new user (admin/superadmin)
+ * Create user (superadmin: superadmin | admin | agent; admin: admin | agent only)
  * POST /api/users
  */
-router.post('/', protect, restrictTo('superadmin'), async (req, res) => {
+router.post('/', protect, restrictTo('superadmin', 'admin'), async (req, res) => {
   try {
     const { email, name, role } = req.body;
 
@@ -39,39 +41,65 @@ router.post('/', protect, restrictTo('superadmin'), async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email, name, and role are required' });
     }
 
-    // 1) Generate random 12-char password
+    const creatable =
+      req.user.role === 'superadmin' ? CREATABLE_BY_SUPERADMIN : CREATABLE_BY_ADMIN;
+
+    if (!creatable.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        error:
+          req.user.role === 'superadmin'
+            ? 'Role must be superadmin, admin, or agent'
+            : 'Admins can only create admin or agent users',
+        code: 'INVALID_ROLE',
+      });
+    }
+
     const temporaryPassword = Math.random().toString(36).slice(-12);
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(temporaryPassword, salt);
 
-    // 2) Save to DB
     const insertResult = await query(
       'INSERT INTO users (email, name, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING id',
-      [email, name, role, passwordHash]
+      [email.trim(), name.trim(), role, passwordHash]
     );
     const newUser = insertResult.rows[0];
 
-    // 3) Log action
     await logAction(req.user.id, 'CREATE_USER', 'users', newUser.id, { email, role, name });
 
-    // 4) Send credentials via email (async for better response time)
-    sendCredentials(email, name, temporaryPassword).catch(err => {
-      console.error('Async credentials email failed:', err);
-    });
+    const emailResult = await sendCredentials(
+      email.trim(),
+      name.trim(),
+      temporaryPassword
+    );
+    const credentialsEmailed = Boolean(emailResult?.sent);
+    const emailError = credentialsEmailed ? null : emailResult?.error || 'Email not sent';
 
     res.status(201).json({
       success: true,
       data: {
         id: newUser.id,
-        email,
-        name,
+        email: email.trim(),
+        name: name.trim(),
         role
       },
-      message: 'User created. Credentials have been emailed.'
+      emailSent: credentialsEmailed,
+      ...(emailError && !credentialsEmailed && { emailError }),
+      message: credentialsEmailed
+        ? 'User created. Credentials have been emailed.'
+        : `User created, but the invitation email was not sent. ${emailError}`,
     });
   } catch (err) {
-    if (err.code === '23505') { // Unique constraint violation
+    if (err.code === '23505') {
       return res.status(400).json({ success: false, error: 'User with this email already exists' });
+    }
+    if (err.code === '23514') {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Database does not allow role "agent" yet. Run backend/migrations/001_users_role_agent.sql on your database.',
+        code: 'SCHEMA_OUTDATED',
+      });
     }
     console.error('Create user error:', err);
     res.status(500).json({ success: false, error: 'Failed to create user' });
@@ -79,10 +107,10 @@ router.post('/', protect, restrictTo('superadmin'), async (req, res) => {
 });
 
 /**
- * Delete a user
+ * Delete a user (superadmin and admin; admins cannot delete superadmin)
  * DELETE /api/users/:id
  */
-router.delete('/:id', protect, restrictTo('superadmin'), async (req, res) => {
+router.delete('/:id', protect, restrictTo('superadmin', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -90,15 +118,24 @@ router.delete('/:id', protect, restrictTo('superadmin'), async (req, res) => {
       return res.status(400).json({ success: false, error: 'You cannot delete yourself' });
     }
 
-    const deleteResult = await query('DELETE FROM users WHERE id = $1 RETURNING email', [id]);
-    const deletedUser = deleteResult.rows[0];
+    const targetResult = await query('SELECT id, email, role FROM users WHERE id = $1', [id]);
+    const target = targetResult.rows[0];
 
-    if (!deletedUser) {
+    if (!target) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    // Log action
-    await logAction(req.user.id, 'DELETE_USER', 'users', id, { email: deletedUser.email });
+    if (target.role === 'superadmin' && req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Admins cannot remove a superadmin',
+        code: 'FORBIDDEN',
+      });
+    }
+
+    await query('DELETE FROM users WHERE id = $1', [id]);
+
+    await logAction(req.user.id, 'DELETE_USER', 'users', id, { email: target.email });
 
     res.json({
       success: true,

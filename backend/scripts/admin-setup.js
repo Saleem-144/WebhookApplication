@@ -10,18 +10,41 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const { Pool } = pg;
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+
+const BCRYPT_ROUNDS = 12;
+const MIN_PASSWORD_LENGTH = 8;
 
 const createAdmin = async () => {
-  const email = 'admin@example.com';
-  const password = 'admin123'; // User should change this on first login
-  const name = 'Super Admin';
+  const email = (process.env.INITIAL_ADMIN_EMAIL || '').trim();
+  const password = process.env.INITIAL_ADMIN_PASSWORD || '';
+  const name = (process.env.INITIAL_ADMIN_NAME || 'Super Admin').trim() || 'Super Admin';
   const role = 'superadmin';
 
+  if (!email) {
+    console.error(
+      'Missing INITIAL_ADMIN_EMAIL in backend/.env. Set it to the superadmin email, then run this script again.'
+    );
+    process.exit(1);
+  }
+
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
+    console.error(
+      `Missing or weak INITIAL_ADMIN_PASSWORD in backend/.env. Use at least ${MIN_PASSWORD_LENGTH} characters.`
+    );
+    process.exit(1);
+  }
+
+  if (!process.env.DATABASE_URL) {
+    console.error('Missing DATABASE_URL in backend/.env.');
+    process.exit(1);
+  }
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(BCRYPT_ROUNDS);
     const hash = await bcrypt.hash(password, salt);
 
     const res = await pool.query(
@@ -30,15 +53,18 @@ const createAdmin = async () => {
     );
 
     if (res.rows.length > 0) {
-      console.log('Super Admin user created successfully!');
+      console.log('Super Admin user created in the database.');
       console.log('Email:', email);
-      console.log('Password:', password);
-      console.log('IMPORTANT: Log in and change this password immediately.');
+      console.log(
+        'Sign in with that email and the password you set as INITIAL_ADMIN_PASSWORD (it is not shown here).'
+      );
+      console.log('Change the password after first login.');
     } else {
-      console.log('User with this email already exists.');
+      console.log('A user with this email already exists. No changes were made.');
     }
   } catch (err) {
     console.error('Error creating admin user:', err);
+    process.exit(1);
   } finally {
     await pool.end();
   }

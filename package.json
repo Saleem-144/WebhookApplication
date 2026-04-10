@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:all": "concurrently -k -n api,next -c magenta,cyan \"npm run dev:backend\" \"wait-on http://127.0.0.1:4000/api/health && npm run dev\"",
+    "dev:backend": "npm run dev --prefix backend",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -21,9 +23,13 @@
     "pg": "^8.20.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-virtualized-auto-sizer": "^2.0.3",
+    "react-window": "^2.2.7",
     "redis": "^5.11.0",
     "resend": "^6.9.4",
+    "scoop": "^0.0.2",
     "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.5.0",
     "uuid": "^13.0.0",
     "zustand": "^5.0.12"
@@ -33,9 +39,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.0.4"
   }
 }

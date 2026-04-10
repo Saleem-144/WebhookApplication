@@ -17,11 +17,12 @@ This backend provides the foundational infrastructure for a real-time Dialpad ma
 
 ## Getting Started
 
-1. **Environment Variables**: Ensure `backend/.env` is configured with:
+1. **Environment Variables**: Copy `.env.example` to `.env` and set at least:
    - `DATABASE_URL`: PostgreSQL connection string.
-   - `REDIS_URL`: Redis connection string (for Pub/Sub).
    - `JWT_SECRET`: Secret for signing tokens.
-   - `RESEND_API_KEY`: For automated email credentials.
+   - `REDIS_URL`: Redis connection string (optional; omit to disable Pub/Sub).
+   - `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD`: Required only when running `admin-setup.js` (values are not stored in source code; password is hashed into the DB).
+   - `RESEND_API_KEY`: For automated email credentials when inviting users.
 
 2. **Installation**:
    ```bash
@@ -31,9 +32,14 @@ This backend provides the foundational infrastructure for a real-time Dialpad ma
 
 3. **Database Seeding**:
    ```bash
-   # Create the first superadmin (admin@example.com / admin123)
+   # In backend/.env set INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD (min 8 chars).
+   # Creates the first superadmin in the `users` table — no credentials are hardcoded in code.
    node scripts/admin-setup.js
-   
+
+   # If the DB was created before `agent` existed on `users.role`, run once:
+   # psql $DATABASE_URL -f migrations/001_users_role_agent.sql
+   # For profile pictures: psql $DATABASE_URL -f migrations/002_users_avatar_url.sql
+
    # Populate with mock offices/agents for testing
    node scripts/seed-data.js
    ```
@@ -49,12 +55,14 @@ This backend provides the foundational infrastructure for a real-time Dialpad ma
 
 ### Authentication (`/api/auth`)
 - `POST /login`: Receives `{email, password}`. Sets an HTTP-only cookie named `token`.
+- `PATCH /profile`: (Protected) `{ name }` updates display name.
+- `POST /avatar`: (Protected) `multipart/form-data` field `avatar` — image up to 2 MB (JPEG/PNG/GIF/WebP). Saves under `backend/uploads/avatars` and sets `users.avatar_url`.
 - `POST /change-password`: (Protected) Updates the user's password.
 
 ### User Management (`/api/users`)
-- `GET /`: (Protected) List all dashboard users.
-- `POST /`: (Superadmin Only) Creates a new user, generates a random password, and emails it.
-- `DELETE /:id`: (Superadmin Only) Deletes a user.
+- `GET /`: (Protected, **superadmin** or **admin**) List all dashboard users.
+- `POST /`: (**superadmin** or **admin**) Creates a user. **Superadmin** may set role **superadmin**, **admin**, or **agent**. **Admin** may only set **admin** or **agent** (temporary password; email if Resend is configured).
+- `DELETE /:id`: (**superadmin** or **admin**) Deletes a user. **Admins cannot delete a superadmin.**
 
 ### Statistics & Data (`/api/stats`, `/api/search`)
 - `GET /api/stats/summary`: Returns counts for Offices, Departments, and Agents.

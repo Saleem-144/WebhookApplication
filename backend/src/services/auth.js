@@ -4,8 +4,9 @@ import jwt from 'jsonwebtoken';
  * Signs a JWT token with the user's ID
  */
 export const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '8h'
+  const subject = id == null ? '' : String(id);
+  return jwt.sign({ id: subject }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '8h',
   });
 };
 
@@ -17,10 +18,12 @@ export const createSendToken = (user, statusCode, res) => {
 
   const cookieOptions = {
     expires: new Date(
-      Date.now() + (parseInt(process.env.JWT_EXPIRES_IN) || 8) * 60 * 60 * 1000
+      Date.now() + (parseInt(process.env.JWT_EXPIRES_IN, 10) || 8) * 60 * 60 * 1000
     ),
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
   };
 
   res.cookie('token', token, cookieOptions);

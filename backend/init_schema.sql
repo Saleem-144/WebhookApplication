@@ -5,7 +5,8 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255),
-    role VARCHAR(50) NOT NULL DEFAULT 'admin' CHECK (role IN ('superadmin', 'admin')),
+    avatar_url VARCHAR(2048),
+    role VARCHAR(50) NOT NULL DEFAULT 'admin' CHECK (role IN ('superadmin', 'admin', 'agent')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
     last_login_at TIMESTAMPTZ,
@@ -148,8 +149,10 @@ CREATE TABLE notifications (
     thread_id UUID REFERENCES message_threads(id) ON DELETE SET NULL,
     call_id UUID REFERENCES calls(id) ON DELETE SET NULL,
     preview_text TEXT,
+    meta JSONB NOT NULL DEFAULT '{}',
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMPTZ,
+    dismissed_from_popup_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
@@ -168,6 +171,22 @@ CREATE TABLE webhook_events (
 CREATE INDEX idx_webhook_events_type ON webhook_events(event_type);
 CREATE INDEX idx_webhook_events_processed ON webhook_events(processed);
 CREATE INDEX idx_webhook_events_received ON webhook_events(received_at DESC);
+
+-- Raw Dialpad SMS events from webhooks (see also migrations/003_dialpad_messages.sql)
+CREATE TABLE dialpad_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dialpad_id TEXT NOT NULL UNIQUE,
+    call_id TEXT,
+    contact_id TEXT,
+    direction TEXT,
+    body TEXT,
+    status TEXT,
+    raw_payload JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_dialpad_messages_contact_id ON dialpad_messages (contact_id);
+CREATE INDEX idx_dialpad_messages_updated_at ON dialpad_messages (updated_at DESC);
 
 CREATE TABLE audit_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

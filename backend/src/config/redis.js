@@ -8,7 +8,12 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-const redisUrl = process.env.REDIS_URL;
+// ioredis needs a TCP/TLS URL (rediss://...), not the Upstash REST URL.
+// In Upstash Console: your database → Connect → copy "Redis" / Node.js URL.
+const redisUrl =
+  process.env.REDIS_URL?.trim() ||
+  process.env.UPSTASH_REDIS_URL?.trim() ||
+  null;
 
 let redis;
 let redisSubscriber;
@@ -27,7 +32,9 @@ if (redisUrl) {
     console.error('Failed to initialize Redis:', err);
   }
 } else {
-  console.warn('REDIS_URL missing in .env. Redis features will be disabled.');
+  console.warn(
+    'REDIS_URL (or UPSTASH_REDIS_URL) missing in .env. Redis pub/sub is disabled.'
+  );
 }
 
 export { redisSubscriber };
